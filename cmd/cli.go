@@ -38,9 +38,10 @@ type CLI struct {
 func NewCLI() *CLI {
 	level := Init()
 	f := &flags{
-		Colors: 20,
-		Output: ".",
-		Round:  50,
+		Colors:      20,
+		Output:      ".",
+		Round:       100,
+		Concurrency: 4,
 	}
 
 	command := cobra.Command{
@@ -59,71 +60,22 @@ func NewCLI() *CLI {
 		},
 		Run: func(_ *cobra.Command, args []string) {
 			ch := scan(args[0])
-			for img := range ch {
-				slog.Info("Processing",
-					slog.Any("cp", f.Colors),
-					slog.Any("round", f.Round),
-					slog.String("img", filepath.Base(img.Path)),
-					slog.String("dimension", fmt.Sprintf("%dx%d", img.Width, img.Height)),
-					slog.String("format", img.Type),
-				)
-				outfile := filepath.Join(f.Output, strings.TrimSuffix(filepath.Base(img.Path), img.Ext)+"."+strconv.Itoa(f.Round)+"cp"+strconv.Itoa(f.Colors)+".png")
-				if _, err := os.Stat(outfile); err == nil {
-					slog.Info("File existed",
-						slog.Any("path", outfile),
-						slog.Bool("override", f.Overwrite),
-					)
-					if !f.Overwrite {
-						continue
+			con := make(chan struct{}, f.Concurrency)
+			for i := 0; i < f.Concurrency; i++ {
+				go func() {
+					con <- struct{}{}
+					defer func() {
+						<-con
+					}()
+					for img := range ch {
+						handleImg(img, *f)
 					}
-				}
-
-				now := time.Now()
-				d := make([]gokmeans.Node, 0, img.Width*img.Height)
-				for y := 0; y < img.Height; y++ {
-					for x := 0; x < img.Width; x++ {
-						r, g, b, a := img.At(x, y).RGBA()
-						d = append(d, gokmeans.Node{float64(r >> 8), float64(g >> 8), float64(b >> 8), float64(a >> 8)})
-					}
-				}
-
-				slog.Debug("Start partitioning",
-					slog.Int("cp", f.Colors),
-					slog.String("img", filepath.Base(img.Path)),
-					slog.Int("round", f.Round),
-				)
-				if success, centroids := gokmeans.Train(d, f.Colors, f.Round); success {
-					rbga := image.NewRGBA(image.Rectangle{Min: image.Point{}, Max: image.Point{X: img.Width, Y: img.Height}})
-					for y := 0; y < img.Height; y++ {
-						for x := 0; x < img.Width; x++ {
-							i := y*x + x
-							observation := d[i]
-							index := gokmeans.Nearest(observation, centroids)
-							cluster := centroids[index]
-							rbga.SetRGBA(x, y, color.RGBA{
-								R: round(cluster[0]),
-								G: round(cluster[1]),
-								B: round(cluster[2]),
-								A: round(cluster[3]),
-							})
-						}
-					}
-					o, err := os.Create(outfile)
-					if err == nil {
-						err = png.Encode(o, rbga)
-					}
-					if err != nil {
-						slog.Error("Error writing image", slog.String("out", outfile), slog.Any("err", err))
-						continue
-					}
-					slog.Info("Compress completed", slog.String("out", outfile), slog.Duration("took", time.Since(now)))
-				} else {
-					slog.Warn("Compress failed",
-						slog.Any("cp", f.Colors),
-						slog.String("img", filepath.Base(img.Path)),
-					)
-				}
+				}()
 			}
+			for i := 0; i < f.Concurrency; i++ {
+				con <- struct{}{}
+			}
+			slog.Info("Processing completed.")
 		},
 	}
 
@@ -131,8 +83,75 @@ func NewCLI() *CLI {
 	command.Flags().StringVar(&f.Output, "out", f.Output, "Output directory name")
 	command.Flags().BoolVar(&f.Overwrite, "overwrite", f.Overwrite, "Overwrite output if exists")
 	command.Flags().IntVar(&f.Round, "round", f.Round, "Maximum number of round before stop adjusting")
+	command.Flags().IntVar(&f.Concurrency, "concurrency", f.Concurrency, "Maximum number image process at a time")
 	command.PersistentFlags().Bool("debug", false, "Enable debug mode")
 	return &CLI{&command}
+}
+
+func handleImg(img DecodedImage, f flags) {
+	slog.Info("Processing",
+		slog.Any("cp", f.Colors),
+		slog.Any("round", f.Round),
+		slog.String("img", filepath.Base(img.Path)),
+		slog.String("dimension", fmt.Sprintf("%dx%d", img.Width, img.Height)),
+		slog.String("format", img.Type),
+	)
+	outfile := filepath.Join(f.Output, strings.TrimSuffix(filepath.Base(img.Path), img.Ext)+"."+strconv.Itoa(f.Round)+"cp"+strconv.Itoa(f.Colors)+".png")
+	if _, err := os.Stat(outfile); err == nil {
+		slog.Info("File existed",
+			slog.Any("path", outfile),
+			slog.Bool("override", f.Overwrite),
+		)
+		if !f.Overwrite {
+			return
+		}
+	}
+
+	now := time.Now()
+	d := make([]gokmeans.Node, 0, img.Width*img.Height)
+	for y := 0; y < img.Height; y++ {
+		for x := 0; x < img.Width; x++ {
+			r, g, b, a := img.At(x, y).RGBA()
+			d = append(d, gokmeans.Node{float64(r >> 8), float64(g >> 8), float64(b >> 8), float64(a >> 8)})
+		}
+	}
+
+	slog.Debug("Start partitioning",
+		slog.Int("cp", f.Colors),
+		slog.String("img", filepath.Base(img.Path)),
+		slog.Int("round", f.Round),
+	)
+	if success, centroids := gokmeans.Train(d, f.Colors, f.Round); success {
+		rbga := image.NewRGBA(image.Rectangle{Min: image.Point{}, Max: image.Point{X: img.Width, Y: img.Height}})
+		for y := 0; y < img.Height; y++ {
+			for x := 0; x < img.Width; x++ {
+				i := y*img.Width + x
+				observation := d[i]
+				index := gokmeans.Nearest(observation, centroids)
+				cluster := centroids[index]
+				rbga.SetRGBA(x, y, color.RGBA{
+					R: round(cluster[0]),
+					G: round(cluster[1]),
+					B: round(cluster[2]),
+					A: round(cluster[3]),
+				})
+			}
+		}
+		o, err := os.Create(outfile)
+		if err == nil {
+			err = png.Encode(o, rbga)
+		}
+		if err != nil {
+			slog.Error("Error writing image", slog.String("out", outfile), slog.Any("err", err))
+			return
+		}
+		slog.Info("Compress completed", slog.String("out", outfile), slog.Duration("took", time.Since(now)))
+	} else {
+		slog.Warn("Compress failed",
+			slog.Any("cp", f.Colors),
+			slog.String("img", filepath.Base(img.Path)),
+		)
+	}
 }
 
 func round(f float64) uint8 {
@@ -140,10 +159,11 @@ func round(f float64) uint8 {
 }
 
 type flags struct {
-	Colors    int
-	Output    string
-	Round     int
-	Overwrite bool
+	Colors      int
+	Output      string
+	Round       int
+	Overwrite   bool
+	Concurrency int
 }
 
 func scan(dir string) <-chan DecodedImage {
