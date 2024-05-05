@@ -40,7 +40,7 @@ func NewCLI() *CLI {
 	f := &flags{
 		Colors:      20,
 		Output:      ".",
-		Round:       100,
+		Round:       50,
 		Concurrency: 4,
 	}
 

@@ -24,6 +24,6 @@ Flags:
   -h, --help              help for kcomp
       --out string        Output directory name (default ".")
       --overwrite         Overwrite output if exists
-      --round int         Maximum number of round before stop adjusting (default 100)
+      --round int         Maximum number of round before stop adjusting (default 50)
 
 ```
