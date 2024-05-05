@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/cobra"
 	"image"
 	"image/color"
+	"image/jpeg"
 	_ "image/jpeg"
 	"image/png"
 	"kcomp/internal/kmeans"
@@ -94,12 +95,13 @@ func NewCLI() *CLI {
 
 	command.Flags().IntVarP(&f.Colors, "colors", "n", f.Colors, "Number of colors to use")
 	command.Flags().StringVarP(&f.Output, "out", "o", f.Output, "Output directory name")
-	command.Flags().BoolP("out-current-dir", "O", false, "Output on current directory, same as --out=.")
-	command.Flags().IntP("series", "s", 1, "Number of image to generate, series of output with increasing number of colors up util reached --colors parameter")
+	command.Flags().BoolP("out-current-dir", "O", false, "Output on current directory (same as --out=.)")
+	command.Flags().IntP("series", "s", 1, "Number of image to generate, series of output with increasing number of colors up util reached --colors parameter [min:1]")
 	command.Flags().BoolVarP(&f.Overwrite, "overwrite", "w", f.Overwrite, "Overwrite output if exists")
 	command.Flags().IntVarP(&f.Round, "round", "i", f.Round, "Maximum number of round before stop adjusting (number of kmeans iterations)")
 	command.Flags().IntVarP(&f.Concurrency, "concurrency", "t", f.Concurrency, "Maximum number image process at a time")
 	command.Flags().StringVar(&f.DistanceAlgo, "dalgo", f.DistanceAlgo, "Distance algo for kmeans [EuclideanDistance,EuclideanDistanceSquared,Squared]")
+	command.Flags().IntVar(&f.JPEG, "jpeg", 0, "Specify quality of output jpeg compression [0-100] (set to 0 to output png)")
 	command.PersistentFlags().Bool("debug", false, "Enable debug mode")
 	return &CLI{&command}
 }
@@ -131,7 +133,12 @@ func handleImg(img DecodedImage, f flags) {
 		slog.String("dimension", fmt.Sprintf("%dx%d", img.Width, img.Height)),
 		slog.String("format", img.Type),
 	)
-	outfile := filepath.Join(f.Output, strings.TrimSuffix(filepath.Base(img.Path), filepath.Ext(img.Path))+"."+strconv.Itoa(f.Round)+"cp"+strconv.Itoa(f.Colors)+".png")
+
+	outExt := ".png"
+	if f.JPEG > 0 {
+		outExt = ".jpeg"
+	}
+	outfile := filepath.Join(f.Output, strings.TrimSuffix(filepath.Base(img.Path), filepath.Ext(img.Path))+".kcomp"+strconv.Itoa(f.Round)+"n"+strconv.Itoa(f.Colors)+outExt)
 	if _, err := os.Stat(outfile); err == nil {
 		slog.Info("File existed",
 			slog.Any("path", outfile),
@@ -193,7 +200,11 @@ func handleImg(img DecodedImage, f flags) {
 	}
 	o, err := os.Create(outfile)
 	if err == nil {
-		err = png.Encode(o, rbga)
+		if f.JPEG == 0 {
+			err = png.Encode(o, rbga)
+		} else {
+			err = jpeg.Encode(o, rbga, &jpeg.Options{Quality: f.JPEG})
+		}
 	}
 	if err != nil {
 		slog.Error("Error writing image", slog.String("out", outfile), slog.Any("err", err))
@@ -213,6 +224,7 @@ type flags struct {
 	Overwrite    bool
 	Concurrency  int
 	DistanceAlgo string
+	JPEG         int
 }
 
 func scan(dir string) <-chan DecodedImage {

@@ -31,11 +31,12 @@ Flags:
       --dalgo string      Distance algo for kmeans [EuclideanDistance,EuclideanDistanceSquared,Squared] (default "EuclideanDistance")
       --debug             Enable debug mode
   -h, --help              help for kcomp
+      --jpeg int          Specify quality of output jpeg compression [0-100] (set to 0 to output png)
   -o, --out string        Output directory name (default "kcompressed")
-  -O, --out-current-dir   Output on current directory, same as --out=.
+  -O, --out-current-dir   Output on current directory (same as --out=.)
   -w, --overwrite         Overwrite output if exists
   -i, --round int         Maximum number of round before stop adjusting (number of kmeans iterations) (default 100)
-  -s, --series int        Number of image to generate, series of output with increasing number of colors up util reached --colors parameter (default 1)
+  -s, --series int        Number of image to generate, series of output with increasing number of colors up util reached --colors parameter [min:1] (default 1)
 ```
 
 ## Examples
