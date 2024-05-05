@@ -88,7 +88,6 @@ func NewCLI() *CLI {
 	}
 
 	command.Flags().IntVar(&f.Colors, "colors", f.Colors, "Number of colors to use")
-	command.Flags().BoolVar(&f.Auto, "auto", f.Auto, "Auto select optimal number of color to use, with the max number of cluster specified by --colors parameter (very slow)")
 	command.Flags().StringVar(&f.Output, "out", f.Output, "Output directory name")
 	command.Flags().BoolVar(&f.Overwrite, "overwrite", f.Overwrite, "Overwrite output if exists")
 	command.Flags().IntVar(&f.Round, "round", f.Round, "Maximum number of round before stop adjusting (number of kmeans iterations)")
@@ -106,11 +105,13 @@ func handleImg(img DecodedImage, f flags) {
 		slog.String("dimension", fmt.Sprintf("%dx%d", img.Width, img.Height)),
 		slog.String("format", img.Type),
 	)
-
-	outfile := ""
-	if !f.Auto {
-		outfile = checkOutputFile(img.Path, f.Colors, f)
-		if outfile == "" {
+	outfile := filepath.Join(f.Output, strings.TrimSuffix(filepath.Base(img.Path), filepath.Ext(img.Path))+"."+strconv.Itoa(f.Round)+"cp"+strconv.Itoa(f.Colors)+".png")
+	if _, err := os.Stat(outfile); err == nil {
+		slog.Info("File existed",
+			slog.Any("path", outfile),
+			slog.Bool("override", f.Overwrite),
+		)
+		if !f.Overwrite {
 			return
 		}
 	}
@@ -134,25 +135,6 @@ func handleImg(img DecodedImage, f flags) {
 		fallthrough
 	case "EuclideanDistanceSquared":
 		algo = kmeans.EuclideanDistanceSquared
-	}
-
-	numberOfColor := f.Colors
-	if f.Auto {
-		slog.Debug("Start estimating number of colors",
-			slog.Int("cp", f.Colors),
-			slog.String("img", filepath.Base(img.Path)),
-			slog.Int("round", f.Round),
-		)
-		numberOfColor = kmeans.NewEstimator(f.Round, numberOfColor, algo).Estimate(d)
-		slog.Info("Estimated colors",
-			slog.Any("cp", numberOfColor),
-			slog.Any("round", f.Round),
-			slog.String("img", filepath.Base(img.Path)),
-		)
-		outfile = checkOutputFile(img.Path, numberOfColor, f)
-		if outfile == "" {
-			return
-		}
 	}
 
 	slog.Debug("Start partitioning",
@@ -194,20 +176,6 @@ func handleImg(img DecodedImage, f flags) {
 	slog.Info("Compress completed", slog.String("out", outfile), slog.Duration("took", time.Since(now)))
 }
 
-func checkOutputFile(path string, colors int, f flags) string {
-	outfile := filepath.Join(f.Output, strings.TrimSuffix(filepath.Base(path), filepath.Ext(path))+"."+strconv.Itoa(f.Round)+"cp"+strconv.Itoa(colors)+".png")
-	if _, err := os.Stat(outfile); err == nil {
-		slog.Info("File existed",
-			slog.Any("path", outfile),
-			slog.Bool("override", f.Overwrite),
-		)
-		if !f.Overwrite {
-			return ""
-		}
-	}
-	return outfile
-}
-
 func round(f float64) uint8 {
 	return uint8(math.Round(f))
 }
@@ -216,7 +184,6 @@ type flags struct {
 	Colors       int
 	Output       string
 	Round        int
-	Auto         bool
 	Overwrite    bool
 	Concurrency  int
 	DistanceAlgo string
