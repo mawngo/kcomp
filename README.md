@@ -23,7 +23,7 @@ or compress directory of images
 Reduce number of colors used in image
 
 Usage:
-  kcomp [file] [flags]
+  kcomp [files...] [flags]
   
 Flags:
   -n, --colors int        Number of colors to use (default 12)

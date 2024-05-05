@@ -47,9 +47,9 @@ func NewCLI() *CLI {
 	}
 
 	command := cobra.Command{
-		Use:   "kcomp [file]",
+		Use:   "kcomp [files...]",
 		Short: "Reduce number of colors used in image",
-		Args:  cobra.ExactArgs(1),
+		Args:  cobra.MinimumNArgs(1),
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
 			debug, err := cmd.PersistentFlags().GetBool("debug")
 			if err != nil {
@@ -73,22 +73,24 @@ func NewCLI() *CLI {
 				}
 			}
 
-			if s, err := cmd.Flags().GetInt("series"); err == nil && s > 1 {
-				step := f.Colors / s
-				start := 1
-				if step <= 1 {
-					start = 2
-					step = 1
-					s = f.Colors
-				}
+			for _, arg := range args {
+				if s, err := cmd.Flags().GetInt("series"); err == nil && s > 1 {
+					step := f.Colors / s
+					start := 1
+					if step <= 1 {
+						start = 2
+						step = 1
+						s = f.Colors
+					}
 
-				for i := start; i < s; i++ {
-					sf := f
-					sf.Colors = step * i
-					process(args[0], sf)
+					for i := start; i < s; i++ {
+						sf := f
+						sf.Colors = step * i
+						process(arg, sf)
+					}
 				}
+				process(arg, f)
 			}
-			process(args[0], f)
 			slog.Info("Processing completed.")
 		},
 	}
@@ -138,7 +140,7 @@ func handleImg(img DecodedImage, f flags) {
 	if f.JPEG > 0 {
 		outExt = ".jpeg"
 	}
-	outfile := filepath.Join(f.Output, strings.TrimSuffix(filepath.Base(img.Path), filepath.Ext(img.Path))+".kcomp"+strconv.Itoa(f.Round)+"n"+strconv.Itoa(f.Colors)+outExt)
+	outfile := filepath.Join(f.Output, strings.TrimSuffix(filepath.Base(img.Path), filepath.Ext(img.Path))+".kcp"+strconv.Itoa(f.Round)+"n"+strconv.Itoa(f.Colors)+outExt)
 	if _, err := os.Stat(outfile); err == nil {
 		slog.Info("File existed",
 			slog.Any("path", outfile),
