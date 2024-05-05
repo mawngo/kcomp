@@ -38,7 +38,7 @@ type CLI struct {
 func NewCLI() *CLI {
 	level := Init()
 	f := flags{
-		Colors:       20,
+		Colors:       12,
 		Output:       "kcompressed",
 		Round:        100,
 		Concurrency:  8,
@@ -95,10 +95,10 @@ func NewCLI() *CLI {
 	command.Flags().IntVarP(&f.Colors, "colors", "n", f.Colors, "Number of colors to use")
 	command.Flags().StringVarP(&f.Output, "out", "o", f.Output, "Output directory name")
 	command.Flags().BoolP("out-current-dir", "O", false, "Output on current directory, same as --out=.")
-	command.Flags().IntP("series", "s", 0, "Number of image to generate, series of output with increasing number of colors up util reached --colors parameter")
+	command.Flags().IntP("series", "s", 1, "Number of image to generate, series of output with increasing number of colors up util reached --colors parameter")
 	command.Flags().BoolVarP(&f.Overwrite, "overwrite", "w", f.Overwrite, "Overwrite output if exists")
 	command.Flags().IntVarP(&f.Round, "round", "i", f.Round, "Maximum number of round before stop adjusting (number of kmeans iterations)")
-	command.Flags().IntVar(&f.Concurrency, "concurrency", f.Concurrency, "Maximum number image process at a time")
+	command.Flags().IntVarP(&f.Concurrency, "concurrency", "t", f.Concurrency, "Maximum number image process at a time")
 	command.Flags().StringVar(&f.DistanceAlgo, "dalgo", f.DistanceAlgo, "Distance algo for kmeans [EuclideanDistance,EuclideanDistanceSquared,Squared]")
 	command.PersistentFlags().Bool("debug", false, "Enable debug mode")
 	return &CLI{&command}
