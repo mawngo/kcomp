@@ -59,7 +59,11 @@ func NewCLI() *CLI {
 			}
 			return nil
 		},
-		Run: func(_ *cobra.Command, args []string) {
+		Run: func(cmd *cobra.Command, args []string) {
+			if o, err := cmd.Flags().GetBool("out-current-dir"); err == nil && o {
+				f.Output = "."
+			}
+
 			if _, err := os.Stat(f.Output); err != nil {
 				err := os.Mkdir(f.Output, os.ModePerm)
 				if err != nil {
@@ -87,10 +91,11 @@ func NewCLI() *CLI {
 		},
 	}
 
-	command.Flags().IntVar(&f.Colors, "colors", f.Colors, "Number of colors to use")
-	command.Flags().StringVar(&f.Output, "out", f.Output, "Output directory name")
-	command.Flags().BoolVar(&f.Overwrite, "overwrite", f.Overwrite, "Overwrite output if exists")
-	command.Flags().IntVar(&f.Round, "round", f.Round, "Maximum number of round before stop adjusting (number of kmeans iterations)")
+	command.Flags().IntVarP(&f.Colors, "colors", "n", f.Colors, "Number of colors to use")
+	command.Flags().StringVarP(&f.Output, "out", "o", f.Output, "Output directory name")
+	command.Flags().BoolP("out-current-dir", "O", false, "Output on current directory, same as --out=.")
+	command.Flags().BoolVarP(&f.Overwrite, "overwrite", "w", f.Overwrite, "Overwrite output if exists")
+	command.Flags().IntVarP(&f.Round, "round", "i", f.Round, "Maximum number of round before stop adjusting (number of kmeans iterations)")
 	command.Flags().IntVar(&f.Concurrency, "concurrency", f.Concurrency, "Maximum number image process at a time")
 	command.Flags().StringVar(&f.DistanceAlgo, "dalgo", f.DistanceAlgo, "Distance algo for kmeans [EuclideanDistance,EuclideanDistanceSquared,Squared]")
 	command.PersistentFlags().Bool("debug", false, "Enable debug mode")
