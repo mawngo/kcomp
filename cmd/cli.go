@@ -59,6 +59,13 @@ func NewCLI() *CLI {
 			return nil
 		},
 		Run: func(_ *cobra.Command, args []string) {
+			if _, err := os.Stat(f.Output); err != nil {
+				err := os.Mkdir(f.Output, os.ModePerm)
+				if err != nil {
+					slog.Info("Error creating output directory", slog.Any("dir", f.Output))
+					return
+				}
+			}
 			ch := scan(args[0])
 			con := make(chan struct{}, f.Concurrency)
 			for i := 0; i < f.Concurrency; i++ {
