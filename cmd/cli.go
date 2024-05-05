@@ -62,8 +62,8 @@ func NewCLI() *CLI {
 			ch := scan(args[0])
 			con := make(chan struct{}, f.Concurrency)
 			for i := 0; i < f.Concurrency; i++ {
+				con <- struct{}{}
 				go func() {
-					con <- struct{}{}
 					defer func() {
 						<-con
 					}()
