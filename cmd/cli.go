@@ -2,13 +2,13 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/mash/gokmeans"
 	"github.com/phsym/console-slog"
 	"github.com/spf13/cobra"
 	"image"
 	"image/color"
 	_ "image/jpeg"
 	"image/png"
+	"kcomp/internal/kmeans"
 	"log/slog"
 	"math"
 	"os"
@@ -115,11 +115,11 @@ func handleImg(img DecodedImage, f flags) {
 	}
 
 	now := time.Now()
-	d := make([]gokmeans.Node, 0, img.Width*img.Height)
+	d := make([][]float64, 0, img.Width*img.Height)
 	for y := 0; y < img.Height; y++ {
 		for x := 0; x < img.Width; x++ {
 			r, g, b, a := img.At(x, y).RGBA()
-			d = append(d, gokmeans.Node{float64(r >> 8), float64(g >> 8), float64(b >> 8), float64(a >> 8)})
+			d = append(d, []float64{float64(r >> 8), float64(g >> 8), float64(b >> 8), float64(a >> 8)})
 		}
 	}
 
@@ -128,37 +128,29 @@ func handleImg(img DecodedImage, f flags) {
 		slog.String("img", filepath.Base(img.Path)),
 		slog.Int("round", f.Round),
 	)
-	if success, centroids := gokmeans.Train(d, f.Colors, f.Round); success {
-		rbga := image.NewRGBA(image.Rectangle{Min: image.Point{}, Max: image.Point{X: img.Width, Y: img.Height}})
-		for y := 0; y < img.Height; y++ {
-			for x := 0; x < img.Width; x++ {
-				i := y*img.Width + x
-				observation := d[i]
-				index := gokmeans.Nearest(observation, centroids)
-				cluster := centroids[index]
-				rbga.SetRGBA(x, y, color.RGBA{
-					R: round(cluster[0]),
-					G: round(cluster[1]),
-					B: round(cluster[2]),
-					A: round(cluster[3]),
-				})
-			}
-		}
-		o, err := os.Create(outfile)
-		if err == nil {
-			err = png.Encode(o, rbga)
-		}
-		if err != nil {
-			slog.Error("Error writing image", slog.String("out", outfile), slog.Any("err", err))
-			return
-		}
-		slog.Info("Compress completed", slog.String("out", outfile), slog.Duration("took", time.Since(now)))
-	} else {
-		slog.Warn("Compress failed",
-			slog.Any("cp", f.Colors),
-			slog.String("img", filepath.Base(img.Path)),
-		)
+	c := kmeans.New(f.Round, f.Colors, kmeans.EuclideanDistance)
+	c.Learn(d)
+	rbga := image.NewRGBA(image.Rectangle{Min: image.Point{}, Max: image.Point{X: img.Width, Y: img.Height}})
+	for index, number := range c.Guesses() {
+		cluster := c.Cluster(number)
+		y := index / img.Width
+		x := index % img.Width
+		rbga.SetRGBA(x, y, color.RGBA{
+			R: round(cluster[0]),
+			G: round(cluster[1]),
+			B: round(cluster[2]),
+			A: round(cluster[3]),
+		})
 	}
+	o, err := os.Create(outfile)
+	if err == nil {
+		err = png.Encode(o, rbga)
+	}
+	if err != nil {
+		slog.Error("Error writing image", slog.String("out", outfile), slog.Any("err", err))
+		return
+	}
+	slog.Info("Compress completed", slog.String("out", outfile), slog.Duration("took", time.Since(now)))
 }
 
 func round(f float64) uint8 {
