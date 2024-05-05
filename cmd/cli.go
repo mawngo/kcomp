@@ -38,10 +38,11 @@ type CLI struct {
 func NewCLI() *CLI {
 	level := Init()
 	f := &flags{
-		Colors:      20,
-		Output:      ".",
-		Round:       100,
-		Concurrency: 4,
+		Colors:       20,
+		Output:       ".",
+		Round:        100,
+		Concurrency:  4,
+		DistanceAlgo: "EuclideanDistance",
 	}
 
 	command := cobra.Command{
@@ -90,8 +91,9 @@ func NewCLI() *CLI {
 	command.Flags().BoolVar(&f.Auto, "auto", f.Auto, "Auto select optimal number of color to use, with the max number of cluster specified by --colors parameter (very slow)")
 	command.Flags().StringVar(&f.Output, "out", f.Output, "Output directory name")
 	command.Flags().BoolVar(&f.Overwrite, "overwrite", f.Overwrite, "Overwrite output if exists")
-	command.Flags().IntVar(&f.Round, "round", f.Round, "Maximum number of round before stop adjusting")
+	command.Flags().IntVar(&f.Round, "round", f.Round, "Maximum number of round before stop adjusting (number of kmeans iterations)")
 	command.Flags().IntVar(&f.Concurrency, "concurrency", f.Concurrency, "Maximum number image process at a time")
+	command.Flags().StringVar(&f.DistanceAlgo, "dalgo", f.DistanceAlgo, "Distance algo for kmeans [EuclideanDistance,EuclideanDistanceSquared,Squared]")
 	command.PersistentFlags().Bool("debug", false, "Enable debug mode")
 	return &CLI{&command}
 }
@@ -126,6 +128,14 @@ func handleImg(img DecodedImage, f flags) {
 		}
 	}
 
+	algo := kmeans.EuclideanDistance
+	switch f.DistanceAlgo {
+	case "Squared":
+		fallthrough
+	case "EuclideanDistanceSquared":
+		algo = kmeans.EuclideanDistanceSquared
+	}
+
 	numberOfColor := f.Colors
 	if f.Auto {
 		slog.Debug("Start estimating number of colors",
@@ -133,7 +143,7 @@ func handleImg(img DecodedImage, f flags) {
 			slog.String("img", filepath.Base(img.Path)),
 			slog.Int("round", f.Round),
 		)
-		numberOfColor = kmeans.NewEstimator(f.Round, numberOfColor, kmeans.EuclideanDistance).Estimate(d)
+		numberOfColor = kmeans.NewEstimator(f.Round, numberOfColor, algo).Estimate(d)
 		slog.Info("Estimated colors",
 			slog.Any("cp", numberOfColor),
 			slog.Any("round", f.Round),
@@ -150,7 +160,7 @@ func handleImg(img DecodedImage, f flags) {
 		slog.String("img", filepath.Base(img.Path)),
 		slog.Int("round", f.Round),
 	)
-	c := kmeans.New(f.Round, f.Colors, kmeans.EuclideanDistance)
+	c := kmeans.New(f.Round, f.Colors, algo)
 	c.Learn(d)
 	rbga := image.NewRGBA(image.Rectangle{Min: image.Point{}, Max: image.Point{X: img.Width, Y: img.Height}})
 	for index, number := range c.Guesses() {
@@ -203,12 +213,13 @@ func round(f float64) uint8 {
 }
 
 type flags struct {
-	Colors      int
-	Output      string
-	Round       int
-	Auto        bool
-	Overwrite   bool
-	Concurrency int
+	Colors       int
+	Output       string
+	Round        int
+	Auto         bool
+	Overwrite    bool
+	Concurrency  int
+	DistanceAlgo string
 }
 
 func scan(dir string) <-chan DecodedImage {
