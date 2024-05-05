@@ -119,7 +119,11 @@ func handleImg(img DecodedImage, f flags) {
 	for y := 0; y < img.Height; y++ {
 		for x := 0; x < img.Width; x++ {
 			r, g, b, a := img.At(x, y).RGBA()
-			d = append(d, []float64{float64(r >> 8), float64(g >> 8), float64(b >> 8), float64(a >> 8)})
+			if img.Type == "jpeg" {
+				d = append(d, []float64{float64(r >> 8), float64(g >> 8), float64(b >> 8)})
+			} else {
+				d = append(d, []float64{float64(r >> 8), float64(g >> 8), float64(b >> 8), float64(a >> 8)})
+			}
 		}
 	}
 
@@ -135,12 +139,21 @@ func handleImg(img DecodedImage, f flags) {
 		cluster := c.Cluster(number)
 		y := index / img.Width
 		x := index % img.Width
-		rbga.SetRGBA(x, y, color.RGBA{
-			R: round(cluster[0]),
-			G: round(cluster[1]),
-			B: round(cluster[2]),
-			A: round(cluster[3]),
-		})
+		if img.Type == "jpeg" {
+			rbga.Set(x, y, color.RGBA{
+				R: round(cluster[0]),
+				G: round(cluster[1]),
+				B: round(cluster[2]),
+				A: 255,
+			})
+		} else {
+			rbga.SetRGBA(x, y, color.RGBA{
+				R: round(cluster[0]),
+				G: round(cluster[1]),
+				B: round(cluster[2]),
+				A: round(cluster[3]),
+			})
+		}
 	}
 	o, err := os.Create(outfile)
 	if err == nil {
