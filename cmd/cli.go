@@ -39,9 +39,9 @@ func NewCLI() *CLI {
 	level := Init()
 	f := &flags{
 		Colors:       20,
-		Output:       ".",
+		Output:       "kcompressed",
 		Round:        100,
-		Concurrency:  4,
+		Concurrency:  8,
 		DistanceAlgo: "EuclideanDistance",
 	}
 
