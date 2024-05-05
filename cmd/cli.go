@@ -37,7 +37,7 @@ type CLI struct {
 // NewCLI create new CLI instance and setup application config.
 func NewCLI() *CLI {
 	level := Init()
-	f := &flags{
+	f := flags{
 		Colors:       20,
 		Output:       "kcompressed",
 		Round:        100,
@@ -71,22 +71,23 @@ func NewCLI() *CLI {
 					return
 				}
 			}
-			ch := scan(args[0])
-			con := make(chan struct{}, f.Concurrency)
-			for i := 0; i < f.Concurrency; i++ {
-				con <- struct{}{}
-				go func() {
-					defer func() {
-						<-con
-					}()
-					for img := range ch {
-						handleImg(img, *f)
-					}
-				}()
+
+			if s, err := cmd.Flags().GetInt("series"); err == nil && s > 1 {
+				step := f.Colors / s
+				start := 1
+				if step <= 1 {
+					start = 2
+					step = 1
+					s = f.Colors
+				}
+
+				for i := start; i < s; i++ {
+					sf := f
+					sf.Colors = step * i
+					process(args[0], sf)
+				}
 			}
-			for i := 0; i < f.Concurrency; i++ {
-				con <- struct{}{}
-			}
+			process(args[0], f)
 			slog.Info("Processing completed.")
 		},
 	}
@@ -94,12 +95,32 @@ func NewCLI() *CLI {
 	command.Flags().IntVarP(&f.Colors, "colors", "n", f.Colors, "Number of colors to use")
 	command.Flags().StringVarP(&f.Output, "out", "o", f.Output, "Output directory name")
 	command.Flags().BoolP("out-current-dir", "O", false, "Output on current directory, same as --out=.")
+	command.Flags().IntP("series", "s", 0, "Number of image to generate, series of output with increasing number of colors up util reached --colors parameter")
 	command.Flags().BoolVarP(&f.Overwrite, "overwrite", "w", f.Overwrite, "Overwrite output if exists")
 	command.Flags().IntVarP(&f.Round, "round", "i", f.Round, "Maximum number of round before stop adjusting (number of kmeans iterations)")
 	command.Flags().IntVar(&f.Concurrency, "concurrency", f.Concurrency, "Maximum number image process at a time")
 	command.Flags().StringVar(&f.DistanceAlgo, "dalgo", f.DistanceAlgo, "Distance algo for kmeans [EuclideanDistance,EuclideanDistanceSquared,Squared]")
 	command.PersistentFlags().Bool("debug", false, "Enable debug mode")
 	return &CLI{&command}
+}
+
+func process(path string, f flags) {
+	ch := scan(path)
+	con := make(chan struct{}, f.Concurrency)
+	for i := 0; i < f.Concurrency; i++ {
+		con <- struct{}{}
+		go func() {
+			defer func() {
+				<-con
+			}()
+			for img := range ch {
+				handleImg(img, f)
+			}
+		}()
+	}
+	for i := 0; i < f.Concurrency; i++ {
+		con <- struct{}{}
+	}
 }
 
 func handleImg(img DecodedImage, f flags) {
