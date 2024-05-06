@@ -30,6 +30,7 @@ Flags:
   -t, --concurrency int   Maximum number image process at a time (default 8)
       --dalgo string      Distance algo for kmeans [EuclideanDistance,EuclideanDistanceSquared,Squared] (default "EuclideanDistance")
       --debug             Enable debug mode
+  -d, --delta float       Delta threshold of convergence (delta between kmeans old and new centroid’s values) (default 0.01)
   -h, --help              help for kcomp
       --jpeg int          Specify quality of output jpeg compression [0-100] (set to 0 to output png)
   -o, --out string        Output directory name (default "kcompressed")

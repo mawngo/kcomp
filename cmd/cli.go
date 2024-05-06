@@ -43,6 +43,7 @@ func NewCLI() *CLI {
 		Round:        100,
 		Concurrency:  8,
 		DistanceAlgo: "EuclideanDistance",
+		Delta:        0.01,
 	}
 
 	command := cobra.Command{
@@ -100,6 +101,7 @@ func NewCLI() *CLI {
 	command.Flags().IntP("series", "s", 1, "Number of image to generate, series of output with increasing number of colors up util reached --colors parameter [min:1]")
 	command.Flags().BoolVarP(&f.Overwrite, "overwrite", "w", f.Overwrite, "Overwrite output if exists")
 	command.Flags().IntVarP(&f.Round, "round", "i", f.Round, "Maximum number of round before stop adjusting (number of kmeans iterations)")
+	command.Flags().Float64VarP(&f.Delta, "delta", "d", f.Delta, "Delta threshold of convergence (delta between kmeans old and new centroid’s values)")
 	command.Flags().IntVarP(&f.Concurrency, "concurrency", "t", f.Concurrency, "Maximum number image process at a time")
 	command.Flags().StringVar(&f.DistanceAlgo, "dalgo", f.DistanceAlgo, "Distance algo for kmeans [EuclideanDistance,EuclideanDistanceSquared,Squared]")
 	command.Flags().IntVar(&f.JPEG, "jpeg", 0, "Specify quality of output jpeg compression [0-100] (set to 0 to output png)")
@@ -176,11 +178,10 @@ func handleImg(img DecodedImage, f flags) {
 		slog.String("img", filepath.Base(img.Path)),
 		slog.Int("round", f.Round),
 	)
-	c := kmeans.New(f.Round, f.Colors, algo)
-	c.Learn(d)
+	m := kmeans.NewTrainer(f.Colors, kmeans.WithDistanceFunc(algo), kmeans.WithMaxIterations(f.Round), kmeans.WithDeltaThreshold(f.Delta)).Fit(d)
 	rbga := image.NewRGBA(image.Rectangle{Min: image.Point{}, Max: image.Point{X: img.Width, Y: img.Height}})
-	for index, number := range c.Guesses() {
-		cluster := c.Cluster(number)
+	for index, number := range m.Guesses() {
+		cluster := m.Cluster(number)
 		y := index / img.Width
 		x := index % img.Width
 		if img.Type == "jpeg" {
@@ -211,7 +212,10 @@ func handleImg(img DecodedImage, f flags) {
 		slog.Error("Error writing image", slog.String("out", outfile), slog.Any("err", err))
 		return
 	}
-	slog.Info("Compress completed", slog.String("out", outfile), slog.Duration("took", time.Since(now)))
+	slog.Info("Compress completed",
+		slog.String("out", outfile),
+		slog.Duration("took", time.Since(now)),
+		slog.Int("iter", m.Iter()))
 }
 
 func round(f float64) uint8 {
@@ -226,6 +230,7 @@ type flags struct {
 	Concurrency  int
 	DistanceAlgo string
 	JPEG         int
+	Delta        float64
 }
 
 func scan(dir string) <-chan DecodedImage {

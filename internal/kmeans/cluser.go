@@ -1,14 +1,7 @@
 package kmeans
 
 import (
-	"errors"
 	"math"
-)
-
-var (
-	ErrEmptySet       = errors.New("empty training set")
-	ErrZeroIterations = errors.New("number of iterations cannot be less than 1")
-	ErrOneCluster     = errors.New("number of clusters cannot be less than 2")
 )
 
 // DistanceFunc represents a function for measuring distance between n-dimensional vectors.
