@@ -38,7 +38,7 @@ type CLI struct {
 func NewCLI() *CLI {
 	level := Init()
 	f := flags{
-		Colors:       12,
+		Colors:       15,
 		Output:       "kcompressed",
 		Round:        100,
 		Concurrency:  8,
@@ -177,6 +177,7 @@ func handleImg(img DecodedImage, f flags) {
 		slog.Int("cp", f.Colors),
 		slog.String("img", filepath.Base(img.Path)),
 		slog.Int("round", f.Round),
+		slog.Duration("elapsed", time.Since(now)),
 	)
 	m := kmeans.NewTrainer(f.Colors, kmeans.WithDistanceFunc(algo), kmeans.WithMaxIterations(f.Round), kmeans.WithDeltaThreshold(f.Delta)).Fit(d)
 	rbga := image.NewRGBA(image.Rectangle{Min: image.Point{}, Max: image.Point{X: img.Width, Y: img.Height}})

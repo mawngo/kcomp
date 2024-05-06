@@ -4,6 +4,7 @@ import (
 	"gonum.org/v1/gonum/floats"
 	"math"
 	"math/rand"
+	"runtime"
 )
 
 type Dataset [][]float64
@@ -13,6 +14,7 @@ type Trainer struct {
 	maxIterations int
 	distanceFn    DistanceFunc
 	delta         float64
+	concurrency   int
 }
 
 type TrainerOption func(*Trainer)
@@ -33,6 +35,7 @@ func NewTrainer(k int, options ...TrainerOption) Trainer {
 		maxIterations: 100,
 		distanceFn:    EuclideanDistance,
 		delta:         0.01,
+		concurrency:   runtime.NumCPU(),
 	}
 	for i := range options {
 		options[i](&t)
@@ -58,49 +61,61 @@ func WithDeltaThreshold(delta float64) TrainerOption {
 	}
 }
 
-// Fit create and train the *Model
+// Fit create and train the *Model.
 func (t Trainer) Fit(data Dataset) *Model {
 	model := Model{data: data, k: t.k, distanceFn: t.distanceFn}
 	model.initializeMean()
 	l := len(model.centroids[0])
 	changeThreshold := int(float64(len(data)) * t.delta)
 
-	cb := make([]int, len(data))
-	cn := make(Dataset, t.k)
-	for i := 0; i < t.k; i++ {
-		cn[i] = make([]float64, l)
-	}
-
+	cb, cn := prepare(t.k, l)
 	iter := 0
 	for ; iter < t.maxIterations; iter++ {
 		changes := 0
-		for i := 0; i < t.k; i++ {
-			cb[i] = 0
+		icb := make([][]int, t.concurrency)
+		icn := make([]Dataset, t.concurrency)
+		ch := make(chan int, t.concurrency)
+		for num := range t.concurrency {
+			go func() {
+				defer func() {
+					ch <- num
+				}()
+				cb, cn := prepare(t.k, l)
+				for i := num; i < len(data); i += t.concurrency {
+					m := t.distanceFn(data[i], model.centroids[0])
+					n := 0
+
+					for j := 1; j < t.k; j++ {
+						if d := t.distanceFn(data[i], model.centroids[j]); d < m {
+							m = d
+							n = j
+						}
+					}
+
+					if model.mapping[i] != n {
+						changes++
+					}
+
+					model.mapping[i] = n
+					cb[n]++
+					floats.Add(cn[n], data[i])
+				}
+				icb[num] = cb
+				icn[num] = cn
+			}()
 		}
 
-		for i := 0; i < len(data); i++ {
-			m := t.distanceFn(data[i], model.centroids[0])
-			n := 0
-
-			for j := 1; j < t.k; j++ {
-				if d := t.distanceFn(data[i], model.centroids[j]); d < m {
-					m = d
-					n = j
-				}
+		for range t.concurrency {
+			num := <-ch
+			for n := range t.k {
+				cb[n] += icb[num][n]
+				floats.Add(cn[n], icn[num][n])
 			}
-
-			if model.mapping[i] != n {
-				changes++
-			}
-
-			model.mapping[i] = n
-			cb[n]++
-
-			floats.Add(cn[n], data[i])
 		}
 
 		for i := 0; i < t.k; i++ {
 			floats.Scale(1/float64(cb[i]), cn[i])
+			cb[i] = 0
 
 			for j := 0; j < l; j++ {
 				model.centroids[i][j] = cn[i][j]
@@ -115,6 +130,15 @@ func (t Trainer) Fit(data Dataset) *Model {
 
 	model.iter = iter
 	return &model
+}
+
+func prepare(k int, l int) ([]int, Dataset) {
+	cb := make([]int, k)
+	cn := make(Dataset, k)
+	for i := 0; i < k; i++ {
+		cn[i] = make([]float64, l)
+	}
+	return cb, cn
 }
 
 func (m *Model) initializeMean() {
