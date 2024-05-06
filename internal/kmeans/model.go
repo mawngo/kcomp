@@ -63,6 +63,7 @@ func (t Trainer) Fit(data Dataset) *Model {
 	model := Model{data: data, k: t.k, distanceFn: t.distanceFn}
 	model.initializeMean()
 	l := len(model.centroids[0])
+	changeThreshold := int(float64(len(data)) * t.delta)
 
 	cb := make([]int, len(data))
 	cn := make(Dataset, t.k)
@@ -107,7 +108,7 @@ func (t Trainer) Fit(data Dataset) *Model {
 			}
 		}
 
-		if changes == 0 || changes < int(float64(len(data))*t.delta) {
+		if changes < changeThreshold {
 			break
 		}
 	}
