@@ -73,23 +73,34 @@ func NewCLI() *CLI {
 				}
 			}
 
+			if f.Concurrency < 1 {
+				f.Concurrency = 1
+			}
+			con := make(chan struct{}, f.Concurrency)
 			for _, arg := range args {
-				if s, err := cmd.Flags().GetInt("series"); err == nil && s > 1 {
-					step := f.Colors / s
-					start := 1
-					if step <= 1 {
-						start = 2
-						step = 1
-						s = f.Colors
-					}
+				ch := scan(arg)
+				for img := range ch {
+					if s, err := cmd.Flags().GetInt("series"); err == nil && s > 1 {
+						step := f.Colors / s
+						start := 1
+						if step <= 1 {
+							start = 2
+							step = 1
+							s = f.Colors
+						}
 
-					for i := start; i < s; i++ {
-						sf := f
-						sf.Colors = step * i
-						process(arg, sf)
+						for i := start; i < s; i++ {
+							sf := f
+							sf.Colors = step * i
+							process(img, sf, con)
+						}
 					}
+					process(img, f, con)
 				}
-				process(arg, f)
+			}
+
+			for range f.Concurrency {
+				con <- struct{}{}
 			}
 			slog.Info("Processing completed.")
 		},
@@ -102,30 +113,21 @@ func NewCLI() *CLI {
 	command.Flags().BoolVarP(&f.Overwrite, "overwrite", "w", f.Overwrite, "Overwrite output if exists")
 	command.Flags().IntVarP(&f.Round, "round", "i", f.Round, "Maximum number of round before stop adjusting (number of kmeans iterations)")
 	command.Flags().Float64VarP(&f.Delta, "delta", "d", f.Delta, "Delta threshold of convergence (delta between kmeans old and new centroid’s values)")
-	command.Flags().IntVarP(&f.Concurrency, "concurrency", "t", f.Concurrency, "Maximum number image process at a time")
+	command.Flags().IntVarP(&f.Concurrency, "concurrency", "t", f.Concurrency, "Maximum number image process at a time [min:1]")
 	command.Flags().StringVar(&f.DistanceAlgo, "dalgo", f.DistanceAlgo, "Distance algo for kmeans [EuclideanDistance,EuclideanDistanceSquared,Squared]")
 	command.Flags().IntVar(&f.JPEG, "jpeg", 0, "Specify quality of output jpeg compression [0-100] (set to 0 to output png)")
 	command.PersistentFlags().Bool("debug", false, "Enable debug mode")
 	return &CLI{&command}
 }
 
-func process(path string, f flags) {
-	ch := scan(path)
-	con := make(chan struct{}, f.Concurrency)
-	for i := 0; i < f.Concurrency; i++ {
-		con <- struct{}{}
-		go func() {
-			defer func() {
-				<-con
-			}()
-			for img := range ch {
-				handleImg(img, f)
-			}
+func process(img DecodedImage, f flags, con chan struct{}) {
+	con <- struct{}{}
+	go func() {
+		defer func() {
+			<-con
 		}()
-	}
-	for i := 0; i < f.Concurrency; i++ {
-		con <- struct{}{}
-	}
+		handleImg(img, f)
+	}()
 }
 
 func handleImg(img DecodedImage, f flags) {
