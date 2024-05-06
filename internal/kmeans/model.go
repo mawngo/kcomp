@@ -28,7 +28,7 @@ type Model struct {
 	iter       int
 }
 
-// NewTrainer create new Trainer
+// NewTrainer create new Trainer.
 func NewTrainer(k int, options ...TrainerOption) Trainer {
 	t := Trainer{
 		k:             k,
@@ -58,6 +58,12 @@ func WithMaxIterations(i int) TrainerOption {
 func WithDeltaThreshold(delta float64) TrainerOption {
 	return func(t *Trainer) {
 		t.delta = delta
+	}
+}
+
+func WithConcurrency(c int) TrainerOption {
+	return func(t *Trainer) {
+		t.concurrency = c
 	}
 }
 
