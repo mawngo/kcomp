@@ -112,7 +112,7 @@ func (t Trainer) Fit(data Dataset) *Model {
 		}
 	}
 
-	model.iter = iter + 1
+	model.iter = iter
 	return &model
 }
 
