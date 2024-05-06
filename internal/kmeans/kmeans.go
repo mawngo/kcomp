@@ -1,12 +1,10 @@
 package kmeans
 
 import (
+	"gonum.org/v1/gonum/floats"
 	"math"
 	"math/rand"
 	"sync"
-	"time"
-
-	"gonum.org/v1/gonum/floats"
 )
 
 const (
@@ -18,10 +16,6 @@ type Kmeans struct {
 
 	// variables keeping count of changes of points' membership every iteration. User as a stopping condition.
 	changes, oldchanges, counter, threshold int
-
-	// For online learning only
-	alpha     float64
-	dimension int
 
 	distance DistanceFunc
 
@@ -36,7 +30,7 @@ type Kmeans struct {
 	d [][]float64
 }
 
-// Implementation of k-means++ algorithm with online learning
+// New Implementation of k-means++ algorithm with online learning.
 func New(iterations, clusters int, distance DistanceFunc) *Kmeans {
 	if iterations < 1 {
 		panic(ErrZeroIterations)
@@ -60,21 +54,6 @@ func New(iterations, clusters int, distance DistanceFunc) *Kmeans {
 		number:     clusters,
 		distance:   d,
 	}
-}
-
-func (c *Kmeans) IsOnline() bool {
-	return true
-}
-
-func (c *Kmeans) WithOnline(o Online) *Kmeans {
-	c.alpha = o.Alpha
-	c.dimension = o.Dimension
-
-	c.d = make([][]float64, 0, 100)
-
-	c.initializeMeans()
-
-	return c
 }
 
 func (c *Kmeans) Learn(data [][]float64) {
@@ -131,7 +110,7 @@ func (c *Kmeans) Predict(p []float64) int {
 	var (
 		l int
 		d float64
-		m float64 = c.distance(p, c.m[0])
+		m = c.distance(p, c.m[0])
 	)
 
 	for i := 1; i < c.number; i++ {
@@ -144,103 +123,22 @@ func (c *Kmeans) Predict(p []float64) int {
 	return l
 }
 
-func (c *Kmeans) Online(observations chan []float64, done chan struct{}) chan *HCEvent {
-	c.mu.Lock()
-
-	var (
-		r    chan *HCEvent = make(chan *HCEvent)
-		l, f int           = len(c.m), len(c.m[0])
-		h    float64       = 1 - c.alpha
-	)
-
-	c.b = make([]int, c.number)
-
-	/* The first step of online learning is adjusting the centroids by finding the one closes to new data point
-	 * and modifying it's location using given alpha. Once the client quits sending new data, the actual clusters
-	 * are computed and the mutex is unlocked. */
-
-	go func() {
-		for {
-			select {
-			case o := <-observations:
-				var (
-					k int
-					n float64
-					m float64 = math.Pow(c.distance(o, c.m[0]), 2)
-				)
-
-				for i := 1; i < l; i++ {
-					if n = math.Pow(c.distance(o, c.m[i]), 2); n < m {
-						m = n
-						k = i
-					}
-				}
-
-				r <- &HCEvent{
-					Cluster:     k,
-					Observation: o,
-				}
-
-				for i := 0; i < f; i++ {
-					c.m[k][i] = c.alpha*o[i] + h*c.m[k][i]
-				}
-
-				c.d = append(c.d, o)
-			case <-done:
-				go func() {
-					var (
-						n    int
-						d, m float64
-					)
-
-					c.a = make([]int, len(c.d))
-
-					for i := 0; i < len(c.d); i++ {
-						m = c.distance(c.d[i], c.m[0])
-						n = 0
-
-						for j := 1; j < c.number; j++ {
-							if d = c.distance(c.d[i], c.m[j]); d < m {
-								m = d
-								n = j
-							}
-						}
-
-						c.a[i] = n + 1
-						c.b[n]++
-					}
-
-					c.mu.Unlock()
-				}()
-
-				return
-			}
-		}
-	}()
-
-	return r
-}
-
-// private
+// private.
 func (c *Kmeans) initializeMeansWithData() {
 	c.m = make([][]float64, c.number)
 	c.n = make([][]float64, c.number)
 
-	rand.Seed(time.Now().UTC().Unix())
-
 	var (
 		k          int
 		s, t, l, f float64
-		d          []float64 = make([]float64, len(c.d))
+		d          = make([]float64, len(c.d))
 	)
 
 	c.m[0] = c.d[rand.Intn(len(c.d)-1)]
 
 	for i := 1; i < c.number; i++ {
 		s = 0
-		t = 0
 		for j := 0; j < len(c.d); j++ {
-
 			l = c.distance(c.m[0], c.d[j])
 			for g := 1; g < i; g++ {
 				if f = c.distance(c.m[g], c.d[j]); f < l {
@@ -266,23 +164,10 @@ func (c *Kmeans) initializeMeansWithData() {
 	}
 }
 
-func (c *Kmeans) initializeMeans() {
-	c.m = make([][]float64, c.number)
-
-	rand.Seed(time.Now().UTC().Unix())
-
-	for i := 0; i < c.number; i++ {
-		c.m[i] = make([]float64, c.dimension)
-		for j := 0; j < c.dimension; j++ {
-			c.m[i][j] = 10 * (rand.Float64() - 0.5)
-		}
-	}
-}
-
 func (c *Kmeans) run() {
 	var (
-		l, k, n int = len(c.m[0]), 0, 0
-		m, d    float64
+		l    = len(c.m[0])
+		m, d float64
 	)
 
 	for i := 0; i < c.number; i++ {
@@ -291,7 +176,7 @@ func (c *Kmeans) run() {
 
 	for i := 0; i < len(c.d); i++ {
 		m = c.distance(c.d[i], c.m[0])
-		n = 0
+		n := 0
 
 		for j := 1; j < c.number; j++ {
 			if d = c.distance(c.d[i], c.m[j]); d < m {
@@ -300,7 +185,7 @@ func (c *Kmeans) run() {
 			}
 		}
 
-		k = n + 1
+		k := n + 1
 
 		if c.a[i] != k {
 			c.changes++

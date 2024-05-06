@@ -7,7 +7,6 @@ import (
 	"image"
 	"image/color"
 	"image/jpeg"
-	_ "image/jpeg"
 	"image/png"
 	"kcomp/internal/kmeans"
 	"log/slog"

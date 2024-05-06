@@ -11,32 +11,17 @@ var (
 	ErrOneCluster     = errors.New("number of clusters cannot be less than 2")
 )
 
-// DistanceFunc represents a function for measuring distance
-// between n-dimensional vectors.
+// DistanceFunc represents a function for measuring distance between n-dimensional vectors.
 type DistanceFunc func([]float64, []float64) float64
 
-// Online represents parameters important for online learning in
-// clustering algorithms.
-type Online struct {
-	Alpha     float64
-	Dimension int
-}
-
-// HCEvent represents the intermediate result of computation of hard clustering algorithm
-// and are transmitted periodically to the caller during online learning
-type HCEvent struct {
-	Cluster     int
-	Observation []float64
-}
-
 var (
-	// EuclideanDistance is one of the common distance measurement
+	// EuclideanDistance is one of the common distance measurement.
 	EuclideanDistance = func(a, b []float64) float64 {
 		var (
 			s, t float64
 		)
 
-		for i, _ := range a {
+		for i := range a {
 			t = a[i] - b[i]
 			s += t * t
 		}
@@ -44,13 +29,13 @@ var (
 		return math.Sqrt(s)
 	}
 
-	// EuclideanDistanceSquared is one of the common distance measurement
+	// EuclideanDistanceSquared is one of the common distance measurement.
 	EuclideanDistanceSquared = func(a, b []float64) float64 {
 		var (
 			s, t float64
 		)
 
-		for i, _ := range a {
+		for i := range a {
 			t = a[i] - b[i]
 			s += t * t
 		}
