@@ -43,7 +43,7 @@ func NewCLI() *CLI {
 		Round:        100,
 		Concurrency:  8,
 		DistanceAlgo: "EuclideanDistance",
-		Delta:        0.01,
+		Delta:        0.005,
 	}
 
 	command := cobra.Command{
@@ -63,6 +63,10 @@ func NewCLI() *CLI {
 		Run: func(cmd *cobra.Command, args []string) {
 			if o, err := cmd.Flags().GetBool("out-current-dir"); err == nil && o {
 				f.Output = "."
+			}
+			if q, err := cmd.Flags().GetBool("quick"); err == nil && q {
+				f.Delta = 0.01
+				f.Round = 50
 			}
 
 			if _, err := os.Stat(f.Output); err != nil {
@@ -110,11 +114,12 @@ func NewCLI() *CLI {
 	command.Flags().StringVarP(&f.Output, "out", "o", f.Output, "Output directory name")
 	command.Flags().BoolP("out-current-dir", "O", false, "Output on current directory (same as --out=.)")
 	command.Flags().IntP("series", "s", 1, "Number of image to generate, series of output with increasing number of colors up util reached --colors parameter [min:1]")
+	command.Flags().BoolP("quick", "q", false, "Increase speed in exchange of accuracy")
 	command.Flags().BoolVarP(&f.Overwrite, "overwrite", "w", f.Overwrite, "Overwrite output if exists")
 	command.Flags().IntVarP(&f.Round, "round", "i", f.Round, "Maximum number of round before stop adjusting (number of kmeans iterations)")
 	command.Flags().Float64VarP(&f.Delta, "delta", "d", f.Delta, "Delta threshold of convergence (delta between kmeans old and new centroid’s values)")
 	command.Flags().IntVarP(&f.Concurrency, "concurrency", "t", f.Concurrency, "Maximum number image process at a time [min:1]")
-	command.Flags().StringVar(&f.DistanceAlgo, "dalgo", f.DistanceAlgo, "Distance algo for kmeans [EuclideanDistance,EuclideanDistanceSquared,Squared]")
+	command.Flags().StringVar(&f.DistanceAlgo, "dalgo", f.DistanceAlgo, "Distance algo for kmeans [EuclideanDistance,EuclideanDistanceSquared]")
 	command.Flags().IntVar(&f.JPEG, "jpeg", 0, "Specify quality of output jpeg compression [0-100] (set to 0 to output png)")
 	command.PersistentFlags().Bool("debug", false, "Enable debug mode")
 	return &CLI{&command}
@@ -168,10 +173,7 @@ func handleImg(img DecodedImage, f flags) {
 	}
 
 	algo := kmeans.EuclideanDistance
-	switch f.DistanceAlgo {
-	case "Squared":
-		fallthrough
-	case "EuclideanDistanceSquared":
+	if f.DistanceAlgo == "EuclideanDistanceSquared" {
 		algo = kmeans.EuclideanDistanceSquared
 	}
 
