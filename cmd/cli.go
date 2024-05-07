@@ -61,6 +61,7 @@ func NewCLI() *CLI {
 			return nil
 		},
 		Run: func(cmd *cobra.Command, args []string) {
+			now := time.Now()
 			if o, err := cmd.Flags().GetBool("out-current-dir"); err == nil && o {
 				f.Output = "."
 			}
@@ -106,7 +107,7 @@ func NewCLI() *CLI {
 			for range f.Concurrency {
 				con <- struct{}{}
 			}
-			slog.Info("Processing completed.")
+			slog.Info("Processing completed", slog.Duration("took", time.Since(now)))
 		},
 	}
 
