@@ -1,4 +1,4 @@
-module kcomp
+module github.com/lana-toolbox/kcomp
 
 go 1.22
 

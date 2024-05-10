@@ -2,7 +2,13 @@
 
 Reduce number of color used in image using k-mean clustering.
 
-# Usage
+## Installation
+
+```shell
+go get github.com/lana-toolbox/kcomp@latest
+```
+
+## Usage
 
 compress image
 
