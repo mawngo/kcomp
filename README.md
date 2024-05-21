@@ -7,7 +7,7 @@ Reduce number of color used in image using k-mean clustering.
 Require go 1.22+
 
 ```shell
-go install github.com/lana-toolbox/kcomp@latest
+go install github.com/sitdownrightnow2552/kcomp@latest
 ```
 
 ## Usage

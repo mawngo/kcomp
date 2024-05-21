@@ -1,6 +1,6 @@
 package main
 
-import "github.com/lana-toolbox/kcomp/cmd"
+import "github.com/sitdownrightnow2552/kcomp/cmd"
 
 func main() {
 	cli := cmd.NewCLI()

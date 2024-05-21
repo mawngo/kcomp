@@ -2,8 +2,8 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/lana-toolbox/kcomp/internal/kmeans"
 	"github.com/phsym/console-slog"
+	"github.com/sitdownrightnow2552/kcomp/internal/kmeans"
 	"github.com/spf13/cobra"
 	"image"
 	"image/color"
