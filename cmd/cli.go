@@ -3,7 +3,7 @@ package cmd
 import (
 	"fmt"
 	"github.com/phsym/console-slog"
-	"github.com/sitdownrightnow2552/kcomp/internal/kmeans"
+	"github.com/sitdownrightnow/kcomp/internal/kmeans"
 	"github.com/spf13/cobra"
 	"image"
 	"image/color"
