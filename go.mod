@@ -1,4 +1,4 @@
-module github.com/sitdownrightnow/kcomp
+module github.com/mawngo/kcomp
 
 go 1.22
 

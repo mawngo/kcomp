@@ -1,6 +1,6 @@
 package main
 
-import "github.com/sitdownrightnow/kcomp/cmd"
+import "github.com/mawngo/kcomp/cmd"
 
 func main() {
 	cli := cmd.NewCLI()
