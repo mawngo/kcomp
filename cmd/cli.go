@@ -62,9 +62,6 @@ func NewCLI() *CLI {
 		},
 		Run: func(cmd *cobra.Command, args []string) {
 			now := time.Now()
-			if o, err := cmd.Flags().GetBool("out-current-dir"); err == nil && o {
-				f.Output = "."
-			}
 			if q, err := cmd.Flags().GetBool("quick"); err == nil && q {
 				f.Delta = 0.01
 				f.Round = 50
@@ -113,7 +110,6 @@ func NewCLI() *CLI {
 
 	command.Flags().IntVarP(&f.Colors, "colors", "n", f.Colors, "Number of colors to use")
 	command.Flags().StringVarP(&f.Output, "out", "o", f.Output, "Output directory name")
-	command.Flags().BoolP("out-current-dir", "O", false, "Output on current directory (same as --out=.)")
 	command.Flags().IntP("series", "s", 1, "Number of image to generate, series of output with increasing number of colors up util reached --colors parameter [min:1]")
 	command.Flags().BoolP("quick", "q", false, "Increase speed in exchange of accuracy")
 	command.Flags().BoolVarP(&f.Overwrite, "overwrite", "w", f.Overwrite, "Overwrite output if exists")

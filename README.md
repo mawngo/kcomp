@@ -42,7 +42,6 @@ Flags:
   -h, --help              help for kcomp
       --jpeg int          Specify quality of output jpeg compression [0-100] (set to 0 to output png)
   -o, --out string        Output directory name (default ".")
-  -O, --out-current-dir   Output on current directory (same as --out=.)
   -w, --overwrite         Overwrite output if exists
   -q, --quick             Increase speed in exchange of accuracy
   -i, --round int         Maximum number of round before stop adjusting (number of kmeans iterations) (default 100)
