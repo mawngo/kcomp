@@ -4,7 +4,7 @@ go 1.22
 
 require (
 	github.com/phsym/console-slog v0.3.1
-	github.com/spf13/cobra v1.8.0
+	github.com/spf13/cobra v1.8.1
 	gonum.org/v1/gonum v0.15.0
 )
 
