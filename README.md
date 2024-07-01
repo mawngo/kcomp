@@ -35,17 +35,17 @@ Usage:
   
 Flags:
   -n, --colors int        Number of colors to use (default 15)
+  -o, --out string        Output directory name (default ".")
+  -s, --series int        Number of image to generate, series of output with increasing number of colors up util reached --colors parameter [min:1] (default 1)
+  -q, --quick             Increase speed in exchange of accuracy
+  -w, --overwrite         Overwrite output if exists
+  -i, --round int         Maximum number of round before stop adjusting (number of kmeans iterations) (default 100)
+  -d, --delta float       Delta threshold of convergence (delta between kmeans old and new centroid’s values) (default 0.005)
   -t, --concurrency int   Maximum number image process at a time [min:1] (default 8)
       --dalgo string      Distance algo for kmeans [EuclideanDistance,EuclideanDistanceSquared] (default "EuclideanDistance")
-      --debug             Enable debug mode
-  -d, --delta float       Delta threshold of convergence (delta between kmeans old and new centroid’s values) (default 0.005)
-  -h, --help              help for kcomp
       --jpeg int          Specify quality of output jpeg compression [0-100] (set to 0 to output png)
-  -o, --out string        Output directory name (default ".")
-  -w, --overwrite         Overwrite output if exists
-  -q, --quick             Increase speed in exchange of accuracy
-  -i, --round int         Maximum number of round before stop adjusting (number of kmeans iterations) (default 100)
-  -s, --series int        Number of image to generate, series of output with increasing number of colors up util reached --colors parameter [min:1] (default 1)
+      --debug             Enable debug mode
+  -h, --help              help for kcomp
 ```
 
 ## Examples

@@ -119,6 +119,7 @@ func NewCLI() *CLI {
 	command.Flags().StringVar(&f.DistanceAlgo, "dalgo", f.DistanceAlgo, "Distance algo for kmeans [EuclideanDistance,EuclideanDistanceSquared]")
 	command.Flags().IntVar(&f.JPEG, "jpeg", 0, "Specify quality of output jpeg compression [0-100] (set to 0 to output png)")
 	command.PersistentFlags().Bool("debug", false, "Enable debug mode")
+	command.Flags().SortFlags = false
 	return &CLI{&command}
 }
 
