@@ -1,6 +1,6 @@
 # K-Compressor
 
-Reduce number of color used in image using k-mean clustering.
+Reduce the number of colors used in image using k-mean clustering.
 
 ## Installation
 
