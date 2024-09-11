@@ -5,6 +5,7 @@ import (
 	"github.com/mawngo/kcomp/internal/kmeans"
 	"github.com/phsym/console-slog"
 	"github.com/spf13/cobra"
+	_ "golang.org/x/image/webp"
 	"image"
 	"image/color"
 	"image/jpeg"
