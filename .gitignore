@@ -3,6 +3,7 @@
 /build/
 /var/
 /.db/
+/dist/
 
 *.db
 *.exe
