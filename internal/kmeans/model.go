@@ -2,7 +2,6 @@ package kmeans
 
 import (
 	"gonum.org/v1/gonum/floats"
-	"math"
 	"math/rand"
 	"runtime"
 )
@@ -163,7 +162,7 @@ func (m *Model) initializeMean() {
 				}
 			}
 
-			d[j] = math.Pow(l, 2)
+			d[j] = l * l
 			s += d[j]
 		}
 

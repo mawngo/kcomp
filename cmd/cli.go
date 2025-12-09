@@ -5,6 +5,7 @@ import (
 	"github.com/mawngo/kcomp/internal/kmeans"
 	"github.com/phsym/console-slog"
 	"github.com/spf13/cobra"
+	// Add webp support.
 	_ "golang.org/x/image/webp"
 	"image"
 	"image/color"
@@ -235,6 +236,7 @@ type flags struct {
 	DistanceAlgo string
 	JPEG         int
 	Delta        float64
+	Series       int
 }
 
 func scan(dir string) <-chan DecodedImage {
@@ -301,7 +303,9 @@ func decode(path string) (DecodedImage, error) {
 	if err != nil {
 		panic(err)
 	}
-	slog.Debug("Decoding image", slog.String("path", path), slog.String("dimension", fmt.Sprintf("%dx%d", img.Config.Width, img.Config.Height)))
+	slog.Debug("Decoding image",
+		slog.String("path", path),
+		slog.String("dimension", fmt.Sprintf("%dx%d", img.Width, img.Height)))
 	imageData, imageType, err := image.Decode(f)
 	if err != nil {
 		return img, err
