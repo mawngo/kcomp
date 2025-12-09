@@ -46,6 +46,7 @@ func NewCLI() *CLI {
 		Concurrency:  8,
 		DistanceAlgo: "EuclideanDistance",
 		Delta:        0.005,
+		Series:       1,
 	}
 
 	command := cobra.Command{
@@ -84,7 +85,7 @@ func NewCLI() *CLI {
 			for _, arg := range args {
 				ch := scan(arg)
 				for img := range ch {
-					if s, err := cmd.Flags().GetInt("series"); err == nil && s > 1 {
+					if s := f.Series; s > 1 {
 						step := f.Colors / s
 						start := 1
 						if step <= 1 {
@@ -112,7 +113,7 @@ func NewCLI() *CLI {
 
 	command.Flags().IntVarP(&f.Colors, "colors", "n", f.Colors, "Number of colors to use")
 	command.Flags().StringVarP(&f.Output, "out", "o", f.Output, "Output directory name")
-	command.Flags().IntP("series", "s", 1, "Number of image to generate, series of output with increasing number of colors up util reached --colors parameter [min:1]")
+	command.Flags().IntVarP(&f.Series, "series", "s", f.Series, "Number of image to generate, series of output with increasing number of colors up util reached --colors parameter [min:1]")
 	command.Flags().BoolP("quick", "q", false, "Increase speed in exchange of accuracy")
 	command.Flags().BoolVarP(&f.Overwrite, "overwrite", "w", f.Overwrite, "Overwrite output if exists")
 	command.Flags().IntVarP(&f.Round, "round", "i", f.Round, "Maximum number of round before stop adjusting (number of kmeans iterations)")
