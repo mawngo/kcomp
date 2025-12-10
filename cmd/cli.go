@@ -150,12 +150,16 @@ func handleImg(img DecodedImage, f flags) {
 		outExt = ".jpeg"
 	}
 	outfile := filepath.Join(f.Output, strings.TrimSuffix(filepath.Base(img.Path), filepath.Ext(img.Path))+".kcp"+strconv.Itoa(f.Round)+"n"+strconv.Itoa(f.Colors)+outExt)
-	if _, err := os.Stat(outfile); err == nil {
+	if stats, err := os.Stat(outfile); err == nil {
 		slog.Info("File existed",
 			slog.Any("path", outfile),
-			slog.Bool("override", f.Overwrite),
+			slog.Bool("isDir", stats.IsDir()),
+			slog.Bool("overwrite", f.Overwrite),
 		)
 		if !f.Overwrite {
+			return
+		}
+		if stats.IsDir() {
 			return
 		}
 	}
