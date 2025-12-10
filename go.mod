@@ -1,6 +1,6 @@
 module github.com/mawngo/kcomp
 
-go 1.24.0
+go 1.25
 
 require (
 	github.com/phsym/console-slog v0.3.1

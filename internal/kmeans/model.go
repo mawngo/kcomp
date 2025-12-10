@@ -2,7 +2,7 @@ package kmeans
 
 import (
 	"gonum.org/v1/gonum/floats"
-	"math/rand"
+	"math/rand/v2"
 	"runtime"
 )
 
@@ -149,7 +149,7 @@ func prepare(k int, l int) ([]int, Dataset) {
 func (m *Model) initializeMean() {
 	m.mapping = make([]int, len(m.data))
 	m.centroids = make(Dataset, m.k)
-	m.centroids[0] = m.data[rand.Intn(len(m.data)-1)]
+	m.centroids[0] = m.data[rand.IntN(len(m.data))]
 
 	d := make([]float64, len(m.data))
 	for i := 1; i < m.k; i++ {
@@ -176,7 +176,7 @@ func (m *Model) initializeMean() {
 	}
 }
 
-// Predict returns number of cluster to which the observation would be assigned.
+// Predict returns number of clusters to which the observation would be assigned.
 func (m *Model) Predict(p []float64) int {
 	l := 0
 	n := m.distanceFn(p, m.centroids[0])

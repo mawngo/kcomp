@@ -8,7 +8,7 @@ import (
 type DistanceFunc func([]float64, []float64) float64
 
 var (
-	// EuclideanDistance is one of the common distance measurement.
+	// EuclideanDistance is one of the common distance measurements.
 	EuclideanDistance = func(a, b []float64) float64 {
 		var (
 			s, t float64
@@ -22,7 +22,7 @@ var (
 		return math.Sqrt(s)
 	}
 
-	// EuclideanDistanceSquared is one of the common distance measurement.
+	// EuclideanDistanceSquared is one of the common distance measurements.
 	EuclideanDistanceSquared = func(a, b []float64) float64 {
 		var (
 			s, t float64
