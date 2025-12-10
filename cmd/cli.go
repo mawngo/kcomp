@@ -208,6 +208,7 @@ func handleImg(img DecodedImage, f flags) {
 	}
 	o, err := os.Create(outfile)
 	if err == nil {
+		defer o.Close()
 		if f.JPEG == 0 {
 			err = png.Encode(o, rbga)
 		} else {
