@@ -141,7 +141,7 @@ func handleImg(img DecodedImage, f flags) {
 	slog.Info("Processing",
 		slog.Any("cp", f.Colors),
 		slog.Any("round", f.Round),
-		slog.String("img", filepath.Base(img.Path)),
+		slog.String("img", img.Basename),
 		slog.String("dimension", fmt.Sprintf("%dx%d", img.Width, img.Height)),
 		slog.String("format", img.Type),
 	)
@@ -150,7 +150,7 @@ func handleImg(img DecodedImage, f flags) {
 	if f.JPEG > 0 {
 		outExt = ".jpeg"
 	}
-	outfile := filepath.Join(f.Output, strings.TrimSuffix(filepath.Base(img.Path), filepath.Ext(img.Path))+".kcp"+strconv.Itoa(f.Round)+"n"+strconv.Itoa(f.Colors)+outExt)
+	outfile := filepath.Join(f.Output, strings.TrimSuffix(img.Basename, filepath.Ext(img.Path))+".kcp"+strconv.Itoa(f.Round)+"n"+strconv.Itoa(f.Colors)+outExt)
 	if stats, err := os.Stat(outfile); err == nil {
 		slog.Info("File existed",
 			slog.Any("path", outfile),
@@ -181,7 +181,7 @@ func handleImg(img DecodedImage, f flags) {
 
 	slog.Debug("Start partitioning",
 		slog.Int("cp", f.Colors),
-		slog.String("img", filepath.Base(img.Path)),
+		slog.String("img", img.Basename),
 		slog.Int("round", f.Round),
 		slog.Duration("elapsed", time.Since(now)),
 	)
@@ -233,8 +233,8 @@ func handleImg(img DecodedImage, f flags) {
 		slog.Int("iter", m.Iter()))
 }
 
-func genPalette(centroids kmeans.Dataset, originalFilename string) {
-	filename := strings.TrimSuffix(originalFilename, filepath.Ext(originalFilename)) + ".pallete.png"
+func genPalette(centroids kmeans.Dataset, originalOutFile string) {
+	filename := strings.TrimSuffix(originalOutFile, filepath.Ext(originalOutFile)) + ".pallete.png"
 
 	swatchWidth := 400
 	if len(centroids) > 1 {
@@ -345,7 +345,8 @@ func scan(dir string) <-chan DecodedImage {
 
 func decode(path string) (DecodedImage, error) {
 	img := DecodedImage{
-		Path: path,
+		Path:     path,
+		Basename: filepath.Base(path),
 	}
 	f, err := os.Open(path)
 	if err != nil {
@@ -379,8 +380,9 @@ func decode(path string) (DecodedImage, error) {
 type DecodedImage struct {
 	image.Image
 	image.Config
-	Type string
-	Path string
+	Type     string
+	Path     string
+	Basename string
 }
 
 func (cli *CLI) Execute() {
