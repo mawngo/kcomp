@@ -120,7 +120,8 @@ func NewCLI() *CLI {
 	command.Flags().Float64VarP(&f.Delta, "delta", "d", f.Delta, "Delta threshold of convergence (delta between kmeans old and new centroid’s values)")
 	command.Flags().IntVarP(&f.Concurrency, "concurrency", "t", f.Concurrency, "Maximum number image process at a time [min:1]")
 	command.Flags().StringVar(&f.DistanceAlgo, "dalgo", f.DistanceAlgo, "Distance algo for kmeans [EuclideanDistance,EuclideanDistanceSquared]")
-	command.Flags().IntVar(&f.JPEG, "jpeg", 0, "Specify quality of output jpeg compression [0-100] (set to 0 to output png)")
+	command.Flags().IntVar(&f.JPEG, "jpeg", f.JPEG, "Specify quality of output jpeg compression [0-100] (set to 0 to output png)")
+	command.Flags().BoolVar(&f.Palette, "palette", f.Palette, "Generate an additional palette image")
 	command.PersistentFlags().Bool("debug", false, "Enable debug mode")
 	command.Flags().SortFlags = false
 	return &CLI{&command}
@@ -184,7 +185,11 @@ func handleImg(img DecodedImage, f flags) {
 		slog.Int("round", f.Round),
 		slog.Duration("elapsed", time.Since(now)),
 	)
-	m := kmeans.NewTrainer(f.Colors, kmeans.WithDistanceFunc(algo), kmeans.WithMaxIterations(f.Round), kmeans.WithDeltaThreshold(f.Delta)).Fit(d)
+	m := kmeans.NewTrainer(f.Colors,
+		kmeans.WithDistanceFunc(algo),
+		kmeans.WithMaxIterations(f.Round),
+		kmeans.WithDeltaThreshold(f.Delta)).
+		Fit(d)
 	rbga := image.NewRGBA(image.Rectangle{Min: image.Point{}, Max: image.Point{X: img.Width, Y: img.Height}})
 	for index, number := range m.Guesses() {
 		cluster := m.Cluster(number)
@@ -199,7 +204,14 @@ func handleImg(img DecodedImage, f flags) {
 	}
 	o, err := os.Create(outfile)
 	if err == nil {
-		defer o.Close()
+		defer func() {
+			err := o.Close()
+			if err != nil {
+				slog.Error("Error closing image file",
+					slog.String("out", outfile),
+					slog.Any("err", err))
+			}
+		}()
 		if f.JPEG == 0 {
 			err = png.Encode(o, rbga)
 		} else {
@@ -207,13 +219,67 @@ func handleImg(img DecodedImage, f flags) {
 		}
 	}
 	if err != nil {
-		slog.Error("Error writing image", slog.String("out", outfile), slog.Any("err", err))
+		slog.Error("Error writing image",
+			slog.String("out", outfile),
+			slog.Any("err", err))
 		return
+	}
+	if f.Palette {
+		genPalette(m.Centroids(), outfile)
 	}
 	slog.Info("Compress completed",
 		slog.String("out", outfile),
 		slog.Duration("took", time.Since(now)),
 		slog.Int("iter", m.Iter()))
+}
+
+func genPalette(centroids kmeans.Dataset, originalFilename string) {
+	filename := strings.TrimSuffix(originalFilename, filepath.Ext(originalFilename)) + ".pallete.png"
+
+	swatchWidth := 400
+	if len(centroids) > 1 {
+		swatchWidth = 200 - min(7*len(centroids)-2, 140)
+	}
+
+	width := swatchWidth * len(centroids)
+	height := int(float64(width) / math.Phi)
+	rect := image.Rect(0, 0, width, height)
+
+	img := image.NewRGBA(rect)
+	for i, cluster := range centroids {
+		c := color.RGBA{
+			R: round(cluster[0]),
+			G: round(cluster[1]),
+			B: round(cluster[2]),
+			A: round(cluster[3]),
+		}
+		startX := i * swatchWidth
+		endX := (i + 1) * swatchWidth
+		for y := 0; y < height; y++ {
+			for x := startX; x < endX; x++ {
+				img.Set(x, y, c)
+			}
+		}
+	}
+
+	o, err := os.Create(filename)
+	if err == nil {
+		defer func() {
+			err := o.Close()
+			if err != nil {
+				slog.Error("Error closing palette file",
+					slog.String("out", filename),
+					slog.Any("err", err))
+			}
+		}()
+		err = png.Encode(o, img)
+	}
+	if err != nil {
+		slog.Error("Error writing palette image",
+			slog.String("out", filename),
+			slog.Any("err", err))
+		return
+	}
 }
 
 func round(f float64) uint8 {
@@ -230,6 +296,7 @@ type flags struct {
 	JPEG         int
 	Delta        float64
 	Series       int
+	Palette      bool
 }
 
 func scan(dir string) <-chan DecodedImage {

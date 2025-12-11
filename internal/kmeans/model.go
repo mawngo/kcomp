@@ -199,7 +199,12 @@ func (m *Model) Cluster(i int) []float64 {
 	return m.centroids[i]
 }
 
-// Iter returns model number of iterations.
+// Centroids returns all clusters.
+func (m *Model) Centroids() Dataset {
+	return m.centroids
+}
+
+// Iter returns the model's number of iterations.
 func (m *Model) Iter() int {
 	return m.iter
 }

@@ -44,6 +44,7 @@ Flags:
   -t, --concurrency int   Maximum number image process at a time [min:1] (default 8)
       --dalgo string      Distance algo for kmeans [EuclideanDistance,EuclideanDistanceSquared] (default "EuclideanDistance")
       --jpeg int          Specify quality of output jpeg compression [0-100] (set to 0 to output png)
+      --palette           Generate an additional palette image
       --debug             Enable debug mode
   -h, --help              help for kcomp
 ```
@@ -55,12 +56,12 @@ Flags:
 ```
 
 ```shell
-10:46PM INF Processing cp=5 round=100 img=chika.jpeg dimension=200x200 format=jpeg
-10:46PM INF Compress completed out=chika.100cp5.png took=60.239ms
-10:46PM INF Processing completed.
+4:05PM INF Processing cp=5 round=100 img=chika.jpeg dimension=200x200 format=jpeg
+4:05PM INF Compress completed out=chika.kcp100n5.png took=33.1119ms iter=3
+4:05PM INF Processing completed took=34.7113ms
 ```
 
-| Original                  | 5 Colors                              | 4 Colors                              |
-|---------------------------|---------------------------------------|---------------------------------------|
-| ![chika.jpeg](chika.jpeg) | ![chika.100cp5.png](chika.100cp5.png) | ![chika.100cp4.png](chika.100cp4.png) |
+| Original                  | 5 Colors                                  | 4 Colors                                  |
+|---------------------------|-------------------------------------------|-------------------------------------------|
+| ![chika.jpeg](chika.jpeg) | ![chika.kcp100n5.png](chika.kcp100n5.png) | ![chika.kcp100n4.png](chika.kcp100n4.png) |
 
