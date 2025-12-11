@@ -3,7 +3,6 @@ package kmeans
 import (
 	"gonum.org/v1/gonum/floats"
 	"math/rand/v2"
-	"runtime"
 )
 
 type Dataset [][]float64
@@ -34,7 +33,7 @@ func NewTrainer(k int, options ...TrainerOption) Trainer {
 		maxIterations: 100,
 		distanceFn:    EuclideanDistance,
 		delta:         0.01,
-		concurrency:   runtime.NumCPU(),
+		concurrency:   1,
 	}
 	for i := range options {
 		options[i](&t)
