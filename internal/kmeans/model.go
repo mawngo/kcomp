@@ -175,7 +175,7 @@ func (m *Model) initializeMean() {
 	}
 }
 
-// Predict returns number of clusters to which the observation would be assigned.
+// Predict returns the number of clusters to which the observation would be assigned.
 func (m *Model) Predict(p []float64) int {
 	l := 0
 	n := m.distanceFn(p, m.centroids[0])

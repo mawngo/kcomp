@@ -1,10 +1,10 @@
 # K-Compressor
 
-Reduce the number of colors used in image using k-mean clustering.
+Reduce the number of colors used in an image using k-mean clustering.
 
 ## Installation
 
-Require go 1.24+
+Require go 1.25+
 
 ```shell
 go install github.com/mawngo/kcomp@latest

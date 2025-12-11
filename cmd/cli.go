@@ -349,7 +349,7 @@ func scan(dir string) <-chan DecodedImage {
 			path := filepath.Join(dir, file.Name())
 			img, err := decode(path)
 			if err != nil {
-				slog.Error("Not a image", slog.String("path", path), slog.Any("err", err))
+				slog.Error("Not an image", slog.String("path", path), slog.Any("err", err))
 				continue
 			}
 			ch <- img
