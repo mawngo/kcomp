@@ -249,7 +249,7 @@ func handleImg(img DecodedImage, f flags) {
 }
 
 func genPalette(centroids kmeans.Dataset, originalOutFile string) {
-	filename := strings.TrimSuffix(originalOutFile, filepath.Ext(originalOutFile)) + ".pallete.png"
+	filename := strings.TrimSuffix(originalOutFile, filepath.Ext(originalOutFile)) + ".palette.png"
 
 	swatchWidth := 400
 	if len(centroids) > 1 {
