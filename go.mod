@@ -1,12 +1,12 @@
 module github.com/mawngo/kcomp
 
-go 1.25
+go 1.26
 
 require (
 	github.com/phsym/console-slog v0.3.1
 	github.com/spf13/cobra v1.10.2
-	golang.org/x/image v0.34.0
-	gonum.org/v1/gonum v0.16.0
+	golang.org/x/image v0.39.0
+	gonum.org/v1/gonum v0.17.0
 )
 
 require (
