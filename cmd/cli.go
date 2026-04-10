@@ -124,19 +124,19 @@ func NewCLI() *CLI {
 		},
 	}
 
-	command.Flags().IntVarP(&f.Colors, "colors", "n", f.Colors, "Number of colors to use")
-	command.Flags().StringVarP(&f.Output, "out", "o", f.Output, "Output directory name")
-	command.Flags().IntVarP(&f.Series, "series", "s", f.Series, "Number of image to generate, series of output with increasing number of colors up util reached --colors parameter")
-	command.Flags().BoolP("quick", "q", false, "Increase speed in exchange of accuracy")
-	command.Flags().BoolVarP(&f.Overwrite, "overwrite", "w", f.Overwrite, "Overwrite output if exists")
-	command.Flags().IntVarP(&f.Round, "round", "i", f.Round, "Maximum number of round before stop adjusting (number of kmeans iterations)")
-	command.Flags().Float64VarP(&f.Delta, "delta", "d", f.Delta, "Delta threshold of convergence (delta between kmeans old and new centroid’s values)")
-	command.Flags().IntVarP(&f.Concurrency, "concurrency", "t", f.Concurrency, "Maximum number image process at a time [0=auto]")
-	command.Flags().IntVar(&f.KConcurrency, "kcpu", f.KConcurrency, "Maximum cpu used processing each image [0=auto]")
-	command.Flags().StringVar(&f.DistanceAlgo, "dalgo", f.DistanceAlgo, "Distance algo for kmeans [EuclideanDistance,EuclideanDistanceSquared]")
-	command.Flags().IntVar(&f.JPEG, "jpeg", f.JPEG, "Specify quality of output jpeg compression [0-100] (default 0 - output png)")
-	command.Flags().BoolVar(&f.Palette, "palette", f.Palette, "Generate an additional palette image")
-	command.PersistentFlags().Bool("debug", false, "Enable debug mode")
+	command.Flags().IntVarP(&f.Colors, "colors", "n", f.Colors, "number of colors to use")
+	command.Flags().StringVarP(&f.Output, "out", "o", f.Output, "output directory name")
+	command.Flags().IntVarP(&f.Series, "series", "s", f.Series, "number of image to generate, series of output with increasing number of colors up util reached --colors parameter")
+	command.Flags().BoolP("quick", "q", false, "increase speed in exchange of accuracy")
+	command.Flags().BoolVarP(&f.Overwrite, "overwrite", "w", f.Overwrite, "overwrite output if exists")
+	command.Flags().IntVarP(&f.Round, "round", "i", f.Round, "maximum number of round before stop adjusting (number of kmeans iterations)")
+	command.Flags().Float64VarP(&f.Delta, "delta", "d", f.Delta, "delta threshold of convergence (delta between kmeans old and new centroid’s values)")
+	command.Flags().IntVarP(&f.Concurrency, "concurrency", "t", f.Concurrency, "maximum number image process at a time [0=auto]")
+	command.Flags().IntVar(&f.KConcurrency, "kcpu", f.KConcurrency, "maximum cpu used processing each image [0=auto]")
+	command.Flags().StringVar(&f.DistanceAlgo, "dalgo", f.DistanceAlgo, "distance algo for kmeans [EuclideanDistance,EuclideanDistanceSquared]")
+	command.Flags().IntVar(&f.JPEG, "jpeg", f.JPEG, "specify quality of output jpeg compression [0-100] (default 0 - output png)")
+	command.Flags().BoolVar(&f.Palette, "palette", f.Palette, "generate an additional palette image")
+	command.PersistentFlags().Bool("debug", false, "enable debug mode")
 	command.Flags().SortFlags = false
 	return &CLI{&command}
 }
